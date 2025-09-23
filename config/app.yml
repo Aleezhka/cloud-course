@@ -5,13 +5,11 @@ COMMON: &common
 development:
   <<: *common
   DEBUG: True
-#  SQLALCHEMY_DATABASE_URI: 'sqlite://'
-#  SQLALCHEMY_DATABASE_URI: 'sqlite:///device_db.sqlite'
-  SQLALCHEMY_DATABASE_URI: 'mysql://root:sqlroot@localhost/Laba_2'
+  SQLALCHEMY_DATABASE_URI: 'mssql+pyodbc://olezhka:Sqlroot365@cloud-course-db.database.windows.net:1433/cloud-course-db?driver=ODBC+Driver+18+for+SQL+Server'
 
 production:
   <<: *common
-  SQLALCHEMY_DATABASE_URI: 'mysql://root:sqlroot@localhost/Laba_2'
+  SQLALCHEMY_DATABASE_URI: 'mssql+pyodbc://olezhka:Sqlroot365@cloud-course-db.database.windows.net:1433/cloud-course-db?driver=ODBC+Driver+18+for+SQL+Server'
 
 ADDITIONAL_CONFIG:
   MYSQL_ROOT_USER: root
