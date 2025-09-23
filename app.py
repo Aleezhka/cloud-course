@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
         if flask_env == DEVELOPMENT:
             config_data = config_data_dict[DEVELOPMENT]
-            create_app(config_data, additional_config).run(port=DEVELOPMENT_PORT, debug=True)
+            create_app(config_data, additional_config).run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
 
         elif flask_env == PRODUCTION:
             config_data = config_data_dict[PRODUCTION]
