@@ -29,10 +29,6 @@ def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) ->
 
 def _init_db(app: Flask) -> None:
     db.init_app(app)
-
-    if not database_exists(app.config[DB_URI_KEY]):
-        create_database(app.config[DB_URI_KEY])
-
     with app.app_context():
         db.create_all()
 
