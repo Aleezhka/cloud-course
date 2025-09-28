@@ -295,6 +295,11 @@ DEVELOPMENT_PORT = 5000
 HOST = "0.0.0.0"
 
 app = create_app(app_config, additional_config)
-#app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", DEVELOPMENT_PORT))
+    app.run(host=HOST, port=port, debug=True)
+
 
 
