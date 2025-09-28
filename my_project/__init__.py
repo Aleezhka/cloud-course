@@ -7,13 +7,12 @@ from flask import Flask, request
 from flask_restx import Api, Resource, fields
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
+from my_project.db import db
 
 
 DB_URI_KEY = "SQLALCHEMY_DATABASE_URI"
 DB_USER_KEY = "MYSQL_ROOT_USER"
 DB_PASS_KEY = "MYSQL_ROOT_PASSWORD"
-
-db = SQLAlchemy()
 
 
 def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> Flask:
@@ -300,6 +299,3 @@ app = create_app(app_config, additional_config)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", DEVELOPMENT_PORT))
     app.run(host=HOST, port=port, debug=True)
-
-
-

@@ -1,4 +1,4 @@
-from my_project import db
+from my_project.db import db
 from datetime import datetime
 from typing import Dict, Any
 

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.python-version
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Database files
+*.db
+*.sqlite3
+*.log
+
+# Flask instance folder
+instance/
+
+# Pytest cache
+.pytest_cache/
+.cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# Environment variables
+.env
+.env.* 
