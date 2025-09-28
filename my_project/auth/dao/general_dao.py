@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import inspect
 from sqlalchemy.orm import Mapper
 
-from my_project import db
+from my_project.db import db
 
 
 class GeneralDAO(ABC):

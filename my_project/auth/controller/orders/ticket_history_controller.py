@@ -1,7 +1,7 @@
 from my_project.auth.service import ticket_history_service
 from my_project.auth.controller.general_controller import GeneralController
 from my_project.auth.domain import TicketHistory
-from my_project import db
+from my_project.db import db
 
 class TicketHistoryController(GeneralController):
     _service = ticket_history_service

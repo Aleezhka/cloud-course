@@ -1,5 +1,5 @@
 from my_project.auth.domain.orders.ticket_history import TicketHistory
-from my_project import db
+from my_project.db import db
 
 class TicketHistoryService:
     def find_by_ticket(self, ticket_id: int):
