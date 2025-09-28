@@ -8,8 +8,6 @@ from flask_restx import Api, Resource, fields
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
 
-import pymysql
-pymysql.install_as_MySQLdb()  
 
 DB_URI_KEY = "SQLALCHEMY_DATABASE_URI"
 DB_USER_KEY = "MYSQL_ROOT_USER"
@@ -281,12 +279,17 @@ def _init_swagger(app: Flask) -> None:
 
 
 app_config = {
-        "SQLALCHEMY_DATABASE_URI": (
+    "SQLALCHEMY_DATABASE_URI": (
         "mssql+pyodbc://{0}:{1}@cloud-course-db.database.windows.net:1433/cloud-course-db"
-        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False
-    }
-additional_config = {"MYSQL_ROOT_USER": "olezhka", "MYSQL_ROOT_PASSWORD": "Sqlroot365"}
+        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no"
+    ),
+    "SQLALCHEMY_TRACK_MODIFICATIONS": False
+}
+
+additional_config = {
+    "MYSQL_ROOT_USER": "olezhka",
+    "MYSQL_ROOT_PASSWORD": "Sqlroot365"
+}
 
 DEVELOPMENT_PORT = 5000
 HOST = "0.0.0.0"
