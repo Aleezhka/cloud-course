@@ -281,16 +281,17 @@ def _init_swagger(app: Flask) -> None:
 
 
 app_config = {
-        "SQLALCHEMY_DATABASE_URI": "mysql://{0}:{1}@localhost/cloud_lab",
+        "SQLALCHEMY_DATABASE_URI": (
+        "mssql+pyodbc://{0}:{1}@cloud-course-db.database.windows.net:1433/cloud-course-db"
+        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False
     }
-additional_config = {"MYSQL_ROOT_USER": "root", "MYSQL_ROOT_PASSWORD": "root"}
+additional_config = {"MYSQL_ROOT_USER": "olezhka", "MYSQL_ROOT_PASSWORD": "Sqlroot365"}
+
+DEVELOPMENT_PORT = 5000
+HOST = "0.0.0.0"
 
 app = create_app(app_config, additional_config)
 app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
 
-
-if __name__ == "__main__":
-    DEVELOPMENT_PORT = 5000
-    HOST = "0.0.0.0"
 
