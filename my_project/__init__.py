@@ -295,6 +295,6 @@ DEVELOPMENT_PORT = 5000
 HOST = "0.0.0.0"
 
 app = create_app(app_config, additional_config)
-app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
+#app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
 
 
