@@ -8,8 +8,6 @@ from flask_restx import Api, Resource, fields
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import database_exists, create_database
 
-from my_project.auth.domain import User, Flight, Ticket, TicketHistory, ConnectedFlight
-
 import pymysql
 pymysql.install_as_MySQLdb()  
 
