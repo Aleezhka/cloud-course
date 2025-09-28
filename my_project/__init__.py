@@ -284,10 +284,10 @@ app_config = {
         "SQLALCHEMY_DATABASE_URI": "mysql://{0}:{1}@localhost/cloud_lab",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False
     }
-    additional_config = {"MYSQL_ROOT_USER": "root", "MYSQL_ROOT_PASSWORD": "root"}
+additional_config = {"MYSQL_ROOT_USER": "root", "MYSQL_ROOT_PASSWORD": "root"}
 
-    app = create_app(app_config, additional_config)
-    app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
+app = create_app(app_config, additional_config)
+app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
 
 
 if __name__ == "__main__":
