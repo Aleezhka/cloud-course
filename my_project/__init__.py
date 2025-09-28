@@ -40,6 +40,7 @@ def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[st
 
 
 def _init_swagger(app: Flask) -> None:
+    from my_project.auth.domain import User, Flight, Ticket, TicketHistory, ConnectedFlight
     api = Api(app, title="Olezhka Cloud", description="Azure project")
 
     # --- Моделі для Swagger ---
