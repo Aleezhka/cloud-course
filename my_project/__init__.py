@@ -280,11 +280,7 @@ def _init_swagger(app: Flask) -> None:
             return cf.put_into_dto(), HTTPStatus.CREATED
 
 
-if __name__ == "__main__":
-    DEVELOPMENT_PORT = 5000
-    HOST = "0.0.0.0"
-
-    app_config = {
+app_config = {
         "SQLALCHEMY_DATABASE_URI": "mysql://{0}:{1}@localhost/cloud_lab",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False
     }
@@ -292,3 +288,9 @@ if __name__ == "__main__":
 
     app = create_app(app_config, additional_config)
     app.run(host=HOST, port=DEVELOPMENT_PORT, debug=True)
+
+
+if __name__ == "__main__":
+    DEVELOPMENT_PORT = 5000
+    HOST = "0.0.0.0"
+
