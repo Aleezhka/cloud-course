@@ -5,21 +5,26 @@ from typing import Dict, Any
 
 from flask import Flask, request
 from flask_restx import Api, Resource, fields
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy_utils import database_exists, create_database
 from my_project.db import db
+from dotenv import load_dotenv
 
 
-DB_URI_KEY = "SQLALCHEMY_DATABASE_URI"
-DB_USER_KEY = "MYSQL_ROOT_USER"
-DB_PASS_KEY = "MYSQL_ROOT_PASSWORD"
+load_dotenv()
 
 
-def create_app(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> Flask:
-    _process_input_config(app_config, additional_config)
+def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = secrets.token_hex(16)
-    app.config.update(app_config)
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    db_user = os.environ.get("MYSQL_ROOT_USER")
+    db_pass = os.environ.get("MYSQL_ROOT_PASSWORD")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"mssql+pyodbc://{db_user}:{db_pass}@cloud-course-db.database.windows.net:1433/cloud-course-db"
+        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no"
+    )
+
 
     _init_db(app)
     _init_swagger(app)
@@ -274,23 +279,10 @@ def _init_swagger(app: Flask) -> None:
             return cf.put_into_dto(), HTTPStatus.CREATED
 
 
-app_config = {
-    "SQLALCHEMY_DATABASE_URI": (
-        "mssql+pyodbc://{0}:{1}@cloud-course-db.database.windows.net:1433/cloud-course-db"
-        "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no"
-    ),
-    "SQLALCHEMY_TRACK_MODIFICATIONS": False
-}
-
-additional_config = {
-    "MYSQL_ROOT_USER": "olezhka",
-    "MYSQL_ROOT_PASSWORD": "Sqlroot365"
-}
-
 DEVELOPMENT_PORT = 5000
 HOST = "0.0.0.0"
 
-app = create_app(app_config, additional_config)
+app = create_app()
 
 
 if __name__ == "__main__":
