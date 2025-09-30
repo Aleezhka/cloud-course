@@ -8,3 +8,5 @@ pyodbc==5.2.0
 PyYAML==6.0.2
 Werkzeug==2.3.7
 dotenv
+flask_jwt_extended
+datetime
