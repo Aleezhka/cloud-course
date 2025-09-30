@@ -1,5 +1,4 @@
 import os
-import yaml
 from waitress import serve
 from my_project import create_app
 

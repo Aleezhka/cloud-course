@@ -36,19 +36,14 @@ def _init_db(app: Flask) -> None:
     db.init_app(app)
     with app.app_context():
         db.create_all()
-
-
-def _process_input_config(app_config: Dict[str, Any], additional_config: Dict[str, Any]) -> None:
-    root_user = os.getenv(DB_USER_KEY, additional_config[DB_USER_KEY])
-    root_password = os.getenv(DB_PASS_KEY, additional_config[DB_PASS_KEY])
-    app_config[DB_URI_KEY] = app_config[DB_URI_KEY].format(root_user, root_password)
+        
 
 
 def _init_swagger(app: Flask) -> None:
     from my_project.auth.domain import User, Flight, Ticket, TicketHistory, ConnectedFlight
     api = Api(app, title="Olezhka Cloud", description="Azure project")
 
-    # --- Моделі для Swagger ---
+    # --- MODELS ---
     user_model = api.model('User', {
         'id': fields.Integer(readonly=True),
         'name': fields.String(required=True),
@@ -62,15 +57,15 @@ def _init_swagger(app: Flask) -> None:
         'airline_id': fields.Integer(required=True),
         'departure_airport_id': fields.Integer(required=True),
         'arrival_airport_id': fields.Integer(required=True),
-        'departure_time': fields.String(required=True, description="YYYY-MM-DD HH:MM:SS"),
-        'arrival_time': fields.String(required=True, description="YYYY-MM-DD HH:MM:SS"),
+        'departure_time': fields.String(required=True),
+        'arrival_time': fields.String(required=True),
         'ticket_price': fields.Float(required=True)
     })
 
     ticket_model = api.model('Ticket', {
         'id': fields.Integer(readonly=True),
         'flight_id': fields.Integer(required=True),
-        'purchase_date': fields.String(required=True, description="YYYY-MM-DD HH:MM:SS")
+        'purchase_date': fields.String(required=True)
     })
 
     ticket_history_model = api.model('TicketHistory', {
@@ -78,7 +73,7 @@ def _init_swagger(app: Flask) -> None:
         'ticket_id': fields.Integer(required=True),
         'user_id': fields.Integer(required=True),
         'status': fields.String(required=True),
-        'change_time': fields.String(required=True, description="YYYY-MM-DD HH:MM:SS")
+        'change_time': fields.String(required=True)
     })
 
     connected_flight_model = api.model('ConnectedFlight', {
@@ -87,22 +82,44 @@ def _init_swagger(app: Flask) -> None:
         'connected_flight_id': fields.Integer(required=True)
     })
 
-    # --- Users ---
-    @api.route("/users/<int:user_id>")
-    class UserResource(Resource):
-        @api.marshal_with(user_model)
+    # --- NAMESPACES ---
+    user_ns = api.namespace("users", description="User operations")
+    flight_ns = api.namespace("flights", description="Flight operations")
+    ticket_ns = api.namespace("tickets", description="Ticket operations")
+    th_ns = api.namespace("ticket_histories", description="Ticket history operations")
+    cf_ns = api.namespace("connected_flights", description="Connected flight operations")
+
+    # --- USERS ---
+    @user_ns.route("/")
+    class UserList(Resource):
+        @user_ns.marshal_list_with(user_model)
+        def get(self):
+            return [u.put_into_dto() for u in User.query.all()]
+
+        @user_ns.expect(user_model)
+        @user_ns.marshal_with(user_model, code=201)
+        def post(self):
+            data = request.json
+            user = User.create_from_dto(data)
+            db.session.add(user)
+            db.session.commit()
+            return user.put_into_dto(), HTTPStatus.CREATED
+
+    @user_ns.route("/<int:user_id>")
+    class UserItem(Resource):
+        @user_ns.marshal_with(user_model)
         def get(self, user_id):
             user = User.query.get(user_id)
             return user.put_into_dto() if user else ("User not found", HTTPStatus.NOT_FOUND)
 
-        @api.expect(user_model)
-        @api.marshal_with(user_model)
+        @user_ns.expect(user_model)
+        @user_ns.marshal_with(user_model)
         def put(self, user_id):
             data = request.json
             user = User.query.get(user_id)
             if user:
-                for key, value in data.items():
-                    setattr(user, key, value)
+                for k, v in data.items():
+                    setattr(user, k, v)
                 db.session.commit()
                 return user.put_into_dto(), HTTPStatus.OK
             return ("User not found", HTTPStatus.NOT_FOUND)
@@ -115,37 +132,37 @@ def _init_swagger(app: Flask) -> None:
                 return ("Deleted", HTTPStatus.NO_CONTENT)
             return ("User not found", HTTPStatus.NOT_FOUND)
 
-    @api.route("/users")
-    class UserList(Resource):
-        @api.marshal_list_with(user_model)
+    # --- FLIGHTS ---
+    @flight_ns.route("/")
+    class FlightList(Resource):
+        @flight_ns.marshal_list_with(flight_model)
         def get(self):
-            return [u.put_into_dto() for u in User.query.all()]
+            return [f.put_into_dto() for f in Flight.query.all()]
 
-        @api.expect(user_model)
-        @api.marshal_with(user_model)
+        @flight_ns.expect(flight_model)
+        @flight_ns.marshal_with(flight_model, code=201)
         def post(self):
             data = request.json
-            user = User.create_from_dto(data)
-            db.session.add(user)
+            flight = Flight.create_from_dto(data)
+            db.session.add(flight)
             db.session.commit()
-            return user.put_into_dto(), HTTPStatus.CREATED
+            return flight.put_into_dto(), HTTPStatus.CREATED
 
-    # --- Flight ---
-    @api.route("/flights/<int:flight_id>")
-    class FlightResource(Resource):
-        @api.marshal_with(flight_model)
+    @flight_ns.route("/<int:flight_id>")
+    class FlightItem(Resource):
+        @flight_ns.marshal_with(flight_model)
         def get(self, flight_id):
             flight = Flight.query.get(flight_id)
             return flight.put_into_dto() if flight else ("Flight not found", HTTPStatus.NOT_FOUND)
 
-        @api.expect(flight_model)
-        @api.marshal_with(flight_model)
+        @flight_ns.expect(flight_model)
+        @flight_ns.marshal_with(flight_model)
         def put(self, flight_id):
             data = request.json
             flight = Flight.query.get(flight_id)
             if flight:
-                for key, value in data.items():
-                    setattr(flight, key, value)
+                for k, v in data.items():
+                    setattr(flight, k, v)
                 db.session.commit()
                 return flight.put_into_dto(), HTTPStatus.OK
             return ("Flight not found", HTTPStatus.NOT_FOUND)
@@ -158,37 +175,37 @@ def _init_swagger(app: Flask) -> None:
                 return ("Deleted", HTTPStatus.NO_CONTENT)
             return ("Flight not found", HTTPStatus.NOT_FOUND)
 
-    @api.route("/flights")
-    class FlightList(Resource):
-        @api.marshal_list_with(flight_model)
+    # --- TICKETS ---
+    @ticket_ns.route("/")
+    class TicketList(Resource):
+        @ticket_ns.marshal_list_with(ticket_model)
         def get(self):
-            return [f.put_into_dto() for f in Flight.query.all()]
+            return [t.put_into_dto() for t in Ticket.query.all()]
 
-        @api.expect(flight_model)
-        @api.marshal_with(flight_model)
+        @ticket_ns.expect(ticket_model)
+        @ticket_ns.marshal_with(ticket_model, code=201)
         def post(self):
             data = request.json
-            flight = Flight.create_from_dto(data)
-            db.session.add(flight)
+            ticket = Ticket.create_from_dto(data)
+            db.session.add(ticket)
             db.session.commit()
-            return flight.put_into_dto(), HTTPStatus.CREATED
+            return ticket.put_into_dto(), HTTPStatus.CREATED
 
-    # --- Ticket ---
-    @api.route("/tickets/<int:ticket_id>")
-    class TicketResource(Resource):
-        @api.marshal_with(ticket_model)
+    @ticket_ns.route("/<int:ticket_id>")
+    class TicketItem(Resource):
+        @ticket_ns.marshal_with(ticket_model)
         def get(self, ticket_id):
             ticket = Ticket.query.get(ticket_id)
             return ticket.put_into_dto() if ticket else ("Ticket not found", HTTPStatus.NOT_FOUND)
 
-        @api.expect(ticket_model)
-        @api.marshal_with(ticket_model)
+        @ticket_ns.expect(ticket_model)
+        @ticket_ns.marshal_with(ticket_model)
         def put(self, ticket_id):
             data = request.json
             ticket = Ticket.query.get(ticket_id)
             if ticket:
-                for key, value in data.items():
-                    setattr(ticket, key, value)
+                for k, v in data.items():
+                    setattr(ticket, k, v)
                 db.session.commit()
                 return ticket.put_into_dto(), HTTPStatus.OK
             return ("Ticket not found", HTTPStatus.NOT_FOUND)
@@ -201,25 +218,25 @@ def _init_swagger(app: Flask) -> None:
                 return ("Deleted", HTTPStatus.NO_CONTENT)
             return ("Ticket not found", HTTPStatus.NOT_FOUND)
 
-    @api.route("/tickets")
-    class TicketList(Resource):
-        @api.marshal_list_with(ticket_model)
+    # --- TICKET HISTORY ---
+    @th_ns.route("/")
+    class TicketHistoryList(Resource):
+        @th_ns.marshal_list_with(ticket_history_model)
         def get(self):
-            return [t.put_into_dto() for t in Ticket.query.all()]
+            return [th.put_into_dto() for th in TicketHistory.query.all()]
 
-        @api.expect(ticket_model)
-        @api.marshal_with(ticket_model)
+        @th_ns.expect(ticket_history_model)
+        @th_ns.marshal_with(ticket_history_model, code=201)
         def post(self):
             data = request.json
-            ticket = Ticket.create_from_dto(data)
-            db.session.add(ticket)
+            th = TicketHistory.create_from_dto(data)
+            db.session.add(th)
             db.session.commit()
-            return ticket.put_into_dto(), HTTPStatus.CREATED
+            return th.put_into_dto(), HTTPStatus.CREATED
 
-    # --- TicketHistory ---
-    @api.route("/ticket_histories/<int:id>")
-    class TicketHistoryResource(Resource):
-        @api.marshal_with(ticket_history_model)
+    @th_ns.route("/<int:id>")
+    class TicketHistoryItem(Resource):
+        @th_ns.marshal_with(ticket_history_model)
         def get(self, id):
             th = TicketHistory.query.get(id)
             return th.put_into_dto() if th else ("Not found", HTTPStatus.NOT_FOUND)
@@ -232,25 +249,25 @@ def _init_swagger(app: Flask) -> None:
                 return ("Deleted", HTTPStatus.NO_CONTENT)
             return ("Not found", HTTPStatus.NOT_FOUND)
 
-    @api.route("/ticket_histories")
-    class TicketHistoryList(Resource):
-        @api.marshal_list_with(ticket_history_model)
+    # --- CONNECTED FLIGHTS ---
+    @cf_ns.route("/")
+    class ConnectedFlightList(Resource):
+        @cf_ns.marshal_list_with(connected_flight_model)
         def get(self):
-            return [th.put_into_dto() for th in TicketHistory.query.all()]
+            return [cf.put_into_dto() for cf in ConnectedFlight.query.all()]
 
-        @api.expect(ticket_history_model)
-        @api.marshal_with(ticket_history_model)
+        @cf_ns.expect(connected_flight_model)
+        @cf_ns.marshal_with(connected_flight_model, code=201)
         def post(self):
             data = request.json
-            th = TicketHistory.create_from_dto(data)
-            db.session.add(th)
+            cf = ConnectedFlight.create_from_dto(data)
+            db.session.add(cf)
             db.session.commit()
-            return th.put_into_dto(), HTTPStatus.CREATED
+            return cf.put_into_dto(), HTTPStatus.CREATED
 
-    # --- ConnectedFlight ---
-    @api.route("/connected_flights/<int:id>")
-    class ConnectedFlightResource(Resource):
-        @api.marshal_with(connected_flight_model)
+    @cf_ns.route("/<int:id>")
+    class ConnectedFlightItem(Resource):
+        @cf_ns.marshal_with(connected_flight_model)
         def get(self, id):
             cf = ConnectedFlight.query.get(id)
             return cf.put_into_dto() if cf else ("Not found", HTTPStatus.NOT_FOUND)
@@ -263,20 +280,6 @@ def _init_swagger(app: Flask) -> None:
                 return ("Deleted", HTTPStatus.NO_CONTENT)
             return ("Not found", HTTPStatus.NOT_FOUND)
 
-    @api.route("/connected_flights")
-    class ConnectedFlightList(Resource):
-        @api.marshal_list_with(connected_flight_model)
-        def get(self):
-            return [cf.put_into_dto() for cf in ConnectedFlight.query.all()]
-
-        @api.expect(connected_flight_model)
-        @api.marshal_with(connected_flight_model)
-        def post(self):
-            data = request.json
-            cf = ConnectedFlight.create_from_dto(data)
-            db.session.add(cf)
-            db.session.commit()
-            return cf.put_into_dto(), HTTPStatus.CREATED
 
 
 DEVELOPMENT_PORT = 5000
