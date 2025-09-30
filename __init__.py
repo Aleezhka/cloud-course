@@ -31,7 +31,6 @@ def create_app() -> Flask:
         "?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=no"
     )
 
-
     _init_db(app)
     _init_swagger(app)
 
@@ -136,8 +135,8 @@ def _init_swagger(app: Flask) -> None:
     @user_ns.route("/")
     class UserList(Resource):
         @user_ns.marshal_list_with(user_model)
-        def get(self):
-            return [u.put_into_dto() for u in User.query.all()]
+#        def get(self):
+#           return [u.put_into_dto() for u in User.query.all()]
 
         @jwt_required()
         @user_ns.expect(user_model)
