@@ -2,9 +2,11 @@ import os
 from http import HTTPStatus
 import secrets
 from typing import Dict, Any
+from datetime import timedelta
 
 from flask import Flask, request
 from flask_restx import Api, Resource, fields
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from my_project.db import db
 from dotenv import load_dotenv
 
@@ -16,6 +18,10 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = secrets.token_hex(16)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_SECRET_KEY"] = secrets.token_hex(32)
+
+    jwt = JWTManager(app)
 
     db_user = os.environ.get("MYSQL_ROOT_USER")
     db_pass = os.environ.get("MYSQL_ROOT_PASSWORD")
@@ -41,7 +47,21 @@ def _init_db(app: Flask) -> None:
 
 def _init_swagger(app: Flask) -> None:
     from my_project.auth.domain import User, Flight, Ticket, TicketHistory, ConnectedFlight
-    api = Api(app, title="Olezhka Cloud", description="Azure project")
+    authorizations = {
+    'Bearer Auth': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'Authorization',
+        'description': 'Введи JWT токен у форматі: **Bearer &lt;your_token&gt;**'
+    }
+}
+    api = Api(
+    app,
+    title="Olezhka Cloud",
+    description="Azure project",
+    authorizations=authorizations,
+    security='Bearer Auth'
+)
 
     # --- MODELS ---
     user_model = api.model('User', {
@@ -82,12 +102,35 @@ def _init_swagger(app: Flask) -> None:
         'connected_flight_id': fields.Integer(required=True)
     })
 
+
     # --- NAMESPACES ---
     user_ns = api.namespace("users", description="User operations")
     flight_ns = api.namespace("flights", description="Flight operations")
     ticket_ns = api.namespace("tickets", description="Ticket operations")
     th_ns = api.namespace("ticket_histories", description="Ticket history operations")
     cf_ns = api.namespace("connected_flights", description="Connected flight operations")
+
+    login_model = user_ns.model('Login', {
+    'email': fields.String(required=True, description='User email'),
+    'password': fields.String(required=True, description='User password')
+    })
+
+
+    @user_ns.route("/login")
+    class UserLogin(Resource):
+        @user_ns.expect(login_model)
+        def post(self):
+            data = request.json
+            email = data.get("email")
+            password = data.get("password")
+
+            user = User.query.filter_by(email=email).first()
+            if user and user.password == password:
+                access_token = create_access_token(identity=str(user.id))
+                return {'token': access_token}, HTTPStatus.OK
+
+            return {"message": "Invalid credentials"}, HTTPStatus.UNAUTHORIZED
+        
 
     # --- USERS ---
     @user_ns.route("/")
@@ -96,6 +139,7 @@ def _init_swagger(app: Flask) -> None:
         def get(self):
             return [u.put_into_dto() for u in User.query.all()]
 
+        @jwt_required()
         @user_ns.expect(user_model)
         @user_ns.marshal_with(user_model, code=201)
         def post(self):
@@ -112,6 +156,7 @@ def _init_swagger(app: Flask) -> None:
             user = User.query.get(user_id)
             return user.put_into_dto() if user else ("User not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         @user_ns.expect(user_model)
         @user_ns.marshal_with(user_model)
         def put(self, user_id):
@@ -124,6 +169,7 @@ def _init_swagger(app: Flask) -> None:
                 return user.put_into_dto(), HTTPStatus.OK
             return ("User not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         def delete(self, user_id):
             user = User.query.get(user_id)
             if user:
@@ -139,6 +185,7 @@ def _init_swagger(app: Flask) -> None:
         def get(self):
             return [f.put_into_dto() for f in Flight.query.all()]
 
+        @jwt_required()
         @flight_ns.expect(flight_model)
         @flight_ns.marshal_with(flight_model, code=201)
         def post(self):
@@ -155,6 +202,7 @@ def _init_swagger(app: Flask) -> None:
             flight = Flight.query.get(flight_id)
             return flight.put_into_dto() if flight else ("Flight not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         @flight_ns.expect(flight_model)
         @flight_ns.marshal_with(flight_model)
         def put(self, flight_id):
@@ -167,6 +215,7 @@ def _init_swagger(app: Flask) -> None:
                 return flight.put_into_dto(), HTTPStatus.OK
             return ("Flight not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         def delete(self, flight_id):
             flight = Flight.query.get(flight_id)
             if flight:
@@ -182,6 +231,7 @@ def _init_swagger(app: Flask) -> None:
         def get(self):
             return [t.put_into_dto() for t in Ticket.query.all()]
 
+        @jwt_required()
         @ticket_ns.expect(ticket_model)
         @ticket_ns.marshal_with(ticket_model, code=201)
         def post(self):
@@ -198,6 +248,7 @@ def _init_swagger(app: Flask) -> None:
             ticket = Ticket.query.get(ticket_id)
             return ticket.put_into_dto() if ticket else ("Ticket not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         @ticket_ns.expect(ticket_model)
         @ticket_ns.marshal_with(ticket_model)
         def put(self, ticket_id):
@@ -210,6 +261,7 @@ def _init_swagger(app: Flask) -> None:
                 return ticket.put_into_dto(), HTTPStatus.OK
             return ("Ticket not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         def delete(self, ticket_id):
             ticket = Ticket.query.get(ticket_id)
             if ticket:
@@ -225,6 +277,7 @@ def _init_swagger(app: Flask) -> None:
         def get(self):
             return [th.put_into_dto() for th in TicketHistory.query.all()]
 
+        @jwt_required()
         @th_ns.expect(ticket_history_model)
         @th_ns.marshal_with(ticket_history_model, code=201)
         def post(self):
@@ -241,6 +294,7 @@ def _init_swagger(app: Flask) -> None:
             th = TicketHistory.query.get(id)
             return th.put_into_dto() if th else ("Not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         def delete(self, id):
             th = TicketHistory.query.get(id)
             if th:
@@ -256,6 +310,7 @@ def _init_swagger(app: Flask) -> None:
         def get(self):
             return [cf.put_into_dto() for cf in ConnectedFlight.query.all()]
 
+        @jwt_required()
         @cf_ns.expect(connected_flight_model)
         @cf_ns.marshal_with(connected_flight_model, code=201)
         def post(self):
@@ -272,6 +327,7 @@ def _init_swagger(app: Flask) -> None:
             cf = ConnectedFlight.query.get(id)
             return cf.put_into_dto() if cf else ("Not found", HTTPStatus.NOT_FOUND)
 
+        @jwt_required()
         def delete(self, id):
             cf = ConnectedFlight.query.get(id)
             if cf:
