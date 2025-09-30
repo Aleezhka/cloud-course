@@ -16,7 +16,6 @@ load_dotenv()
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = secrets.token_hex(16)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
     app.config["JWT_SECRET_KEY"] = secrets.token_hex(32)
